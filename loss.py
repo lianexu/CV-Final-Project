@@ -11,8 +11,10 @@ except:
 import math
 import sys
 from numbers import Number
-from collections import Set, Mapping, deque
-
+try:
+    from collections import Set, Mapping, deque
+except:
+    pass
 
 def square_distance(src, dst):
     """
