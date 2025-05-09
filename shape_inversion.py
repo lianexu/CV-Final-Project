@@ -47,7 +47,7 @@ class ShapeInversion(object):
             [{'params': self.G.get_params(i)}
                 for i in range(7)],
             lr=self.G_lrs[0], 
-            betas=(0,0.99),
+            betas=(0.0,0.99),
             weight_decay=0,
             eps=1e-8)
         self.z = torch.zeros((1, 1, 96)).normal_().cuda()
@@ -55,7 +55,7 @@ class ShapeInversion(object):
         self.z_optim = torch.optim.Adam([self.z], lr=self.args.z_lrs[0], betas=(0,0.99))
 
         # load weights
-        checkpoint = torch.load(args.ckpt_load, map_location=self.args.device) 
+        checkpoint = torch.load(args.ckpt_load, map_location=self.args.device, weights_only=False) 
         self.G.load_state_dict(checkpoint['G_state_dict'])
         self.D.load_state_dict(checkpoint['D_state_dict'])
 

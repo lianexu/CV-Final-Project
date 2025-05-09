@@ -62,7 +62,7 @@ class TreeGAN():
 
         metric = {'FPD': []}
         if load_ckpt is not None:
-            checkpoint = torch.load(load_ckpt, map_location=self.args.device)
+            checkpoint = torch.load(load_ckpt, map_location=self.args.device, weights_only=False)
             self.D.load_state_dict(checkpoint['D_state_dict'])
             self.G.load_state_dict(checkpoint['G_state_dict'])
 

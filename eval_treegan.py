@@ -56,7 +56,7 @@ def create_fpd_stats(pcs, pathname_save, device):
     PointNet_pretrained_path = './evaluation/cls_model_39.pth'
 
     model = PointNetCls(k=16).to(device)
-    model.load_state_dict(torch.load(PointNet_pretrained_path))
+    model.load_state_dict(torch.load(PointNet_pretrained_path, weights_only=False))
     mu, sigma = calculate_activation_statistics(pcs, model, device=device)
     print (mu.shape, sigma.shape)
     np.savez(pathname_save,m=mu,s=sigma)
@@ -102,7 +102,7 @@ def test(args, mode='FPD', verbose=True):
         model pth, , points to save, save pth, npz for the class, 
     '''
     G_net = Generator(features=args.G_FEAT, degrees=args.DEGREE, support=args.support,args=args).to(args.device)
-    checkpoint = torch.load(args.model_pathname, map_location=args.device)
+    checkpoint = torch.load(args.model_pathname, map_location=args.device, weights_only=False)
     G_net.load_state_dict(checkpoint['G_state_dict'])
     G_net.eval()
     fake_pcs = generate_pcs(G_net,n_pcs=args.n_samples,batch_size=args.batch_size,device=args.device)
