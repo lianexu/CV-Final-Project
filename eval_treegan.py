@@ -63,24 +63,43 @@ def create_fpd_stats(pcs, pathname_save, device):
     print('fpd stats saved into:', pathname_save)
 
 @timeit
-def script_create_fpd_stats(args, data2stats='CRN'):
-    """
-    create stats of training data for eval FPD, calling create_fpd_stats()
-    """    
-    if data2stats == 'CRN':
-        dataset = CRNShapeNet(args)
-        dataLoader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=8)
-
-        pathname_save = './evaluation/pre_statistics_CRN_'+args.class_choice+'.npz' 
-    else:
-        raise NotImplementedError
-
-    ref_pcs = torch.Tensor([])
-    for _iter, data in enumerate(dataLoader):
-        point, _, _ = data
-        ref_pcs = torch.cat((ref_pcs, point),0)
-    
-    create_fpd_stats(ref_pcs,pathname_save, args.device)
+def script_create_fpd_stats(args, data2stats='PLY'):  
+    """  
+    create stats of training data for eval FPD, calling create_fpd_stats()  
+    """      
+    if data2stats == 'PLY' or data2stats == "Femur":  
+        # Import PlyDataset  
+        from data.ply_dataset import PlyDataset  
+          
+        # Use PlyDataset instead of CRNShapeNet  
+        dataset = PlyDataset(args)  
+        dataLoader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=8)  
+  
+        pathname_save = './evaluation/pre_statistics_PLY_'+args.class_choice+'.npz'  
+    elif data2stats == 'CRN':  
+        # Keep the original CRN code  
+        dataset = CRNShapeNet(args)  
+        dataLoader = torch.utils.data.DataLoader(dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=8)  
+  
+        pathname_save = './evaluation/pre_statistics_CRN_'+args.class_choice+'.npz'   
+    else:  
+        raise NotImplementedError  
+  
+    # You may need to adjust this part based on what PlyDataset returns  
+    ref_pcs = torch.Tensor([])  
+    for _iter, data in enumerate(dataLoader):  
+        # For PlyDataset, check what the data structure is  
+        if data2stats == 'PLY' or data2stats == "Femur":  
+            if len(data) == 2:  # If it returns (input_pcd, stem)  
+                point = data[0]  
+            elif len(data) == 3:  # If it returns (gt_pcd, input_pcd, stem)  
+                point = data[0]  # Use gt_pcd for complete shapes  
+        else:  
+            point, _, _ = data  
+              
+        ref_pcs = torch.cat((ref_pcs, point), 0)  
+      
+    create_fpd_stats(ref_pcs, pathname_save, args.device)
     
 
 @timeit

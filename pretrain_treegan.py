@@ -22,15 +22,20 @@ class TreeGAN():
         self.args = args
         
         ### dataset
-        self.data = CRNShapeNet(args)
+        # self.data = CRNShapeNet(args)
+        if args.dataset in ['Femur']:  
+          from data.ply_dataset import PlyDataset  
+          self.data = PlyDataset(args)  
+        else:  
+          self.data = CRNShapeNet(args)
         self.dataLoader = torch.utils.data.DataLoader(self.data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=16)
         print("Training Dataset : {} prepared.".format(len(self.data)))
         
         ### Model
         self.G = Generator(features=args.G_FEAT, degrees=args.DEGREE, support=args.support,args=self.args).to(args.device)
         self.D = Discriminator(features=args.D_FEAT).to(args.device)             
-        self.optimizerG = optim.Adam(self.G.parameters(), lr=args.lr, betas=(0, 0.99))
-        self.optimizerD = optim.Adam(self.D.parameters(), lr=args.lr, betas=(0, 0.99))
+        self.optimizerG = optim.Adam(self.G.parameters(), lr=args.lr, betas=(0.0, 0.99))
+        self.optimizerD = optim.Adam(self.D.parameters(), lr=args.lr, betas=(0.0, 0.99))
         self.GP = GradientPenalty(args.lambdaGP, gamma=1, device=args.device)
        
         ### uniform losses

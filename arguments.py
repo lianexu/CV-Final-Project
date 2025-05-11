@@ -39,7 +39,8 @@ class Arguments:
         ### others
         self._parser.add_argument('--FPD_path', type=str, default='./evaluation/pre_statistics_chair.npz', help='Statistics file path to evaluate FPD metric. (default:all_class)')
         self._parser.add_argument('--gpu', type=int, default=0, help='GPU number to use.')
-        self._parser.add_argument('--ckpt_load', type=str, default='pretrained_models/chair.pt', help='Checkpoint name to load. (default:None)')
+        # self._parser.add_argument('--ckpt_load', type=str, default='pretrained_models/chair.pt', help='Checkpoint name to load. (default:None)')
+        self._parser.add_argument('--ckpt_load', type=str, help='Checkpoint name to load. (default:None)')
     
     def add_pretrain_args(self):
         ### general training related

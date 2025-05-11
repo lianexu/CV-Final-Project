@@ -59,6 +59,16 @@ class PlyDataset(data.Dataset):
             # swap axis as multimodal and ShapeInversion have different canonical pose
             self.input_ls = [swap_axis(itm, swap_mode='210') for itm in input_ls]
             self.gt_ls = [swap_axis(itm, swap_mode='210') for itm in gt_ls]
+        elif self.dataset in ['Femur']:  
+            # Get all PLY files in the train directory  
+            train_dir = os.path.join(self.dataset_path, 'train', 'femur')  
+            train_files = sorted(glob.glob(os.path.join(train_dir, '*.ply')))  
+              
+            # Read all PLY files  
+            self.input_ls = [read_ply_xyz(file_path) for file_path in train_files]  
+              
+            # Use file names as stems  
+            self.stems = [os.path.splitext(os.path.basename(file_path))[0] for file_path in train_files]
         else:
             raise NotImplementedError
     
@@ -72,6 +82,14 @@ class PlyDataset(data.Dataset):
             input_pcd = self.input_ls[index]
             gt_pcd = self.gt_ls[index]
             return (gt_pcd, input_pcd, stem)
+        elif self.dataset in ['Femur']:  
+            stem = self.stems[index]  
+            input_pcd = self.input_ls[index]  
+            # Convert NumPy array to PyTorch tensor first  
+            input_pcd_tensor = torch.from_numpy(input_pcd)  
+            # Now use zeros_like on the tensor  
+            placeholder = torch.zeros_like(input_pcd_tensor)  
+            return (input_pcd_tensor, placeholder, stem)
     
     def __len__(self):
         return len(self.input_ls)  
