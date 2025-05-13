@@ -151,6 +151,54 @@ def test(args, mode='FPD', verbose=True):
         if verbose:
             print('-----MMD-EMD: {:5.3f}'.format(mmd*100))
 
+def evaluate_generator_discriminator_accuracy(checkpoint_path, args):
+    """
+    Loads a checkpoint and computes the generator and discriminator accuracies.
+    """
+    # Load networks
+    G_net = Generator(features=args.G_FEAT, degrees=args.DEGREE, support=args.support, args=args).to(args.device)
+    D_net = Discriminator(features=args.D_FEAT, degrees=args.DEGREE, support=args.support, args=args).to(args.device)
+    
+    checkpoint = torch.load(checkpoint_path, map_location=args.device)
+    G_net.load_state_dict(checkpoint['G_state_dict'])
+    D_net.load_state_dict(checkpoint['D_state_dict'])
+
+    G_net.eval()
+    D_net.eval()
+
+    # === 1. Generate fake samples
+    batch_size = 64
+    z = torch.randn(batch_size, 1, 96).to(args.device)
+    tree = [z]
+    with torch.no_grad():
+        fake_samples = G_net(tree)
+
+    # === 2. Load a batch of real samples
+    real_dataset = CRNShapeNet(args)
+    real_loader = torch.utils.data.DataLoader(real_dataset, batch_size=batch_size, shuffle=True)
+    real_samples, _, _ = next(iter(real_loader))
+    real_samples = real_samples.to(args.device)
+
+    # === 3. Compute D outputs
+    with torch.no_grad():
+        real_preds = D_net(real_samples)
+        fake_preds = D_net(fake_samples)
+
+    # === 4. Compute discriminator accuracy
+    real_labels = torch.ones_like(real_preds)
+    fake_labels = torch.zeros_like(fake_preds)
+
+    d_real_correct = (real_preds > 0.5).eq(real_labels.bool()).sum().item()
+    d_fake_correct = (fake_preds < 0.5).eq(fake_labels.bool()).sum().item()
+    d_total = real_preds.size(0) + fake_preds.size(0)
+    d_accuracy = (d_real_correct + d_fake_correct) / d_total
+
+    # === 5. Compute generator fooling rate (G accuracy)
+    g_accuracy = (fake_preds > 0.5).sum().item() / fake_preds.size(0)
+
+    print(f"Discriminator Accuracy: {d_accuracy:.4f}")
+    print(f"Generator Fooling Rate (G Accuracy): {g_accuracy:.4f}")
+    return d_accuracy, g_accuracy
 
 if __name__ == '__main__':
     args = Arguments(stage='eval_treegan').parser().parse_args()
@@ -162,3 +210,6 @@ if __name__ == '__main__':
         script_create_fpd_stats(args)
     else:
         test(args,mode=args.eval_treegan_mode)    
+
+    checkpoint_path = args.model_pathname  # or provide another .pth
+    evaluate_generator_discriminator_accuracy(checkpoint_path, args)
