@@ -194,10 +194,14 @@ class ShapeInversion(object):
         
         if self.gt is not None:
             loss_dict = {
-                'ftr_loss': np.asscalar(ftr_loss.detach().cpu().numpy()),
-                'nll': np.asscalar(nll.detach().cpu().numpy()),
-                'cd': np.asscalar(test_cd.detach().cpu().numpy()),
+                'ftr_loss': ftr_loss.detach().cpu().numpy().item(), 
+                'nll': nll.detach().cpu().numpy().item(),
+                'cd': test_cd.detach().cpu().numpy().item(),
             }
+            # 'ftr_loss': np.asscalar(ftr_loss.detach().cpu().numpy()),
+            # 'nll': np.asscalar(nll.detach().cpu().numpy()),
+            # 'cd': np.asscalar(test_cd.detach().cpu().numpy()),
+            # }
             self.loss_log.append(loss_dict)
                 
         ### save point clouds
@@ -501,6 +505,3 @@ class ShapeInversion(object):
         idx = farthest_point_sample(dense_pcd,n)
         sparse_pcd = dense_pcd[0,idx]
         return sparse_pcd
-
-
-

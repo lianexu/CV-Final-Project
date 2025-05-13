@@ -79,7 +79,7 @@ def save_as_ply(point_cloud, output_file):
     o3d.io.write_point_cloud(output_file, pcd)  
   
 # Main processing function  
-def process_stl_files(input_dir, output_dir, num_points=2048, target_range=0.35, augment=True, num_augmentations=3):  
+def process_stl_files(input_dir, output_dir, num_points=2048, target_range=0.35, augment=False, num_augmentations=3):  
     # Create output directory if it doesn't exist  
     os.makedirs(output_dir, exist_ok=True)  
       
