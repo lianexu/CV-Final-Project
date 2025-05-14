@@ -22,6 +22,8 @@ import copy
 from utils.common_utils import *
 from arguments import Arguments
 
+from data.ply_dataset import PlyDataset  
+
 def save_pcs_to_txt(save_dir, fake_pcs):
     """
     save pcds into txt files
@@ -157,7 +159,7 @@ def evaluate_generator_discriminator_accuracy(checkpoint_path, args):
     """
     # Load networks
     G_net = Generator(features=args.G_FEAT, degrees=args.DEGREE, support=args.support, args=args).to(args.device)
-    D_net = Discriminator(features=args.D_FEAT, degrees=args.DEGREE, support=args.support, args=args).to(args.device)
+    D_net = Discriminator(features=args.D_FEAT).to(args.device)
     
     checkpoint = torch.load(checkpoint_path, map_location=args.device)
     G_net.load_state_dict(checkpoint['G_state_dict'])
@@ -167,24 +169,39 @@ def evaluate_generator_discriminator_accuracy(checkpoint_path, args):
     D_net.eval()
 
     # === 1. Generate fake samples
-    batch_size = 64
+    print('generating fake samples')
+    batch_size = 3
     z = torch.randn(batch_size, 1, 96).to(args.device)
     tree = [z]
     with torch.no_grad():
         fake_samples = G_net(tree)
 
     # === 2. Load a batch of real samples
-    real_dataset = CRNShapeNet(args)
-    real_loader = torch.utils.data.DataLoader(real_dataset, batch_size=batch_size, shuffle=True)
+    # real_dataset = CRNShapeNet(args)
+    if args.dataset in ['Femur']:  
+        from data.ply_dataset import PlyDataset  
+        real_dataset = PlyDataset(args)  
+    else:  
+        real_dataset = CRNShapeNet(args)  
+    print(f'dataset: {real_dataset.dataset}')
+    # real_loader = torch.utils.data.DataLoader(real_dataset, batch_size=batch_size, shuffle=True)
+    real_loader = torch.utils.data.DataLoader(real_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=16)
     real_samples, _, _ = next(iter(real_loader))
     real_samples = real_samples.to(args.device)
 
     # === 3. Compute D outputs
+    print('computing the D outputs')
     with torch.no_grad():
         real_preds = D_net(real_samples)
+        real_preds = real_preds[0]  # Extract the main prediction output
+        real_labels = torch.ones_like(real_preds)
+        print(f'the real predictions are {real_preds}')
         fake_preds = D_net(fake_samples)
+        fake_preds = fake_preds[0]
+        fake_labels = torch.zeros_like(fake_preds)
 
     # === 4. Compute discriminator accuracy
+    print('computing the D accuracy')
     real_labels = torch.ones_like(real_preds)
     fake_labels = torch.zeros_like(fake_preds)
 
@@ -194,6 +211,7 @@ def evaluate_generator_discriminator_accuracy(checkpoint_path, args):
     d_accuracy = (d_real_correct + d_fake_correct) / d_total
 
     # === 5. Compute generator fooling rate (G accuracy)
+    print('computing the G accuracy')
     g_accuracy = (fake_preds > 0.5).sum().item() / fake_preds.size(0)
 
     print(f"Discriminator Accuracy: {d_accuracy:.4f}")
@@ -201,6 +219,7 @@ def evaluate_generator_discriminator_accuracy(checkpoint_path, args):
     return d_accuracy, g_accuracy
 
 if __name__ == '__main__':
+    print('starting eval')
     args = Arguments(stage='eval_treegan').parser().parse_args()
     args.device = torch.device('cuda')
 
@@ -209,7 +228,8 @@ if __name__ == '__main__':
     if args.eval_treegan_mode == "generate_fpd_stats":
         script_create_fpd_stats(args)
     else:
-        test(args,mode=args.eval_treegan_mode)    
+        test(args,mode=args.eval_treegan_mode)   
 
+    print('starting checkpoint eval')
     checkpoint_path = args.model_pathname  # or provide another .pth
-    evaluate_generator_discriminator_accuracy(checkpoint_path, args)
+    evaluate_generator_discriminator_accuracy(checkpoint_path, args) 
